@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Sentinel Shield Silhouette (centered in 66dp zone, 21 to 87) -->
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M54,26 C66,26 77,31 82,34 C82,56 71,73 54,82 C37,73 26,56 26,34 C31,31 42,26 54,26 Z" />
+    <!-- Inner High-Contrast Shield Layer -->
+    <path
+        android:fillColor="#1D4ED8"
+        android:pathData="M54,30 C63,30 73,34 77,37 C77,54 68,69 54,77 C40,69 31,54 31,37 C35,34 45,30 54,30 Z" />
+    <!-- Center Rupee / Sentinel Pulse Emblem in White & Cyan -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,40 L62,40 M46,44 L58,44 M46,40 L46,65 M46,51 C54,51 58,48 58,44 M46,51 L60,65"
+        android:strokeWidth="3.2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Radar / Signal Detection Ping Dot -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M67,36 A4,4 0 1,1 67,35.9 Z" />
+</vector>
