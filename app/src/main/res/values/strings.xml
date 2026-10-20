@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">UPI Sentinel</string>
+    <string name="privacy_title">Privacy &amp; Security Shield</string>
+    <string name="privacy_description">UPI Sentinel operates strictly as an autonomous risk evaluation engine. It never requests, captures, or transmits your UPI PIN, banking passwords, or account credentials.</string>
+    <string name="report_cybercrime_title">Report to National Cyber Crime Portal</string>
+    <string name="helpline_1930">Dial 1930 Helpline</string>
 </resources>

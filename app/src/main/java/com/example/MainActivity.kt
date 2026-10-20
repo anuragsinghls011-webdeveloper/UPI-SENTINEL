@@ -1,4 +1,12 @@
 package com.example
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import com.example.ui.components.ClipboardSafetyBanner
+import com.example.ui.screens.CybercrimeIntelScreen
+import com.example.ui.screens.PrivacyShieldScreen
+import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.WarningAmber
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -101,11 +109,55 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleIncomingUpiIntent(intent)
         setContent {
             MyApplicationTheme {
                 SentinelMainApp(viewModel = viewModel)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkClipboardForUpi()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIncomingUpiIntent(intent)
+    }
+
+    private fun handleIncomingUpiIntent(intent: Intent?) {
+        if (intent == null || intent.data == null) return
+        val uri = intent.data ?: return
+        if (uri.scheme == "upi" && (uri.host == "pay" || uri.host == "mandate")) {
+            val pa = uri.getQueryParameter("pa") ?: ""
+            val pn = uri.getQueryParameter("pn") ?: ""
+            val am = uri.getQueryParameter("am") ?: "0"
+            
+            viewModel.formReceiverId.value = pa
+            viewModel.formReceiverName.value = pn
+            viewModel.formAmount.value = am
+            viewModel.formDescription.value = "Intercepted payment intent via upi://${uri.host}"
+            viewModel.selectTab(AppTab.ANALYZE)
+        }
+    }
+
+    private fun checkClipboardForUpi() {
+        try {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+            if (clipboard.hasPrimaryClip()) {
+                val clipData = clipboard.primaryClip
+                if (clipData != null && clipData.itemCount > 0) {
+                    val text = clipData.getItemAt(0)?.text?.toString()?.trim() ?: ""
+                    val isUpiId = text.matches(Regex("^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$"))
+                    val isUpiUri = text.startsWith("upi://pay", ignoreCase = true)
+                    if (isUpiId || isUpiUri) {
+                        viewModel.onClipboardUpiDetected(text)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 }
 
@@ -117,6 +169,7 @@ fun SentinelMainApp(viewModel: SentinelViewModel) {
     val isAnalyzing by viewModel.isAnalyzing.collectAsState()
     val analysisStep by viewModel.analysisStepIndex.collectAsState()
     val selectedDetail by viewModel.selectedDetailResult.collectAsState()
+    val clipboardUpi by viewModel.clipboardDetectedUpi.collectAsState()
     val currentAnalysis by viewModel.currentAnalysisResult.collectAsState()
     val isPresentationMode by viewModel.isPresentationMode.collectAsState()
 
@@ -418,9 +471,14 @@ fun SentinelMainApp(viewModel: SentinelViewModel) {
                             )
 
                             AppTab.MODEL -> ModelIntelScreen(viewModel = viewModel)
-
+                            AppTab.CYBERCRIME -> CybercrimeIntelScreen(
+                                viewModel = viewModel,
+                                onBack = { viewModel.selectTab(AppTab.DASHBOARD) }
+                            )
+                            AppTab.PRIVACY -> PrivacyShieldScreen(
+                                onBack = { viewModel.selectTab(AppTab.DASHBOARD) }
+                            )
                             AppTab.AUDIT -> AuditLogsScreen(viewModel = viewModel)
-
                             AppTab.SECURITY -> SecurityScopeScreen()
                         }
                     }

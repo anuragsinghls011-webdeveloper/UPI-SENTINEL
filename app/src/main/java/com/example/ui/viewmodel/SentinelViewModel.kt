@@ -1,4 +1,8 @@
 package com.example.ui.viewmodel
+import com.example.data.api.SentinelApiService
+import com.example.data.repository.CybercrimeThreatRepository
+import com.example.engine.DualModeRiskEngine
+import com.example.data.model.CybercrimeThreatRecord
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -29,6 +33,8 @@ enum class AppTab(val title: String) {
     DEMO("Demo"),
     TRANSACTIONS("Transactions"),
     MODEL("Model & Intel"),
+    CYBERCRIME("1930 Cybercrime"),
+    PRIVACY("Privacy Shield"),
     AUDIT("Audit Logs"),
     SECURITY("Security")
 }
@@ -43,9 +49,35 @@ class SentinelViewModel(application: Application) : AndroidViewModel(application
 
     private val repository: SentinelRepository
 
+    private val apiService = SentinelApiService.create()
+    val cybercrimeThreatRepository = CybercrimeThreatRepository(apiService)
+    val dualModeRiskEngine = DualModeRiskEngine(apiService, cybercrimeThreatRepository)
+
+    // Clipboard and Intent Interception states
+    private val _clipboardDetectedUpi = MutableStateFlow<String?>(null)
+    val clipboardDetectedUpi: StateFlow<String?> = _clipboardDetectedUpi.asStateFlow()
+
+    private val _cloudSyncActive = MutableStateFlow(false)
+    val cloudSyncActive: StateFlow<Boolean> = _cloudSyncActive.asStateFlow()
+
     init {
         val db = SentinelDatabase.getDatabase(application)
         repository = SentinelRepository(db.sentinelDao())
+        syncCybercrimeIntelligence()
+    }
+
+    fun syncCybercrimeIntelligence() {
+        viewModelScope.launch {
+            cybercrimeThreatRepository.syncLiveFeed()
+        }
+    }
+
+    fun onClipboardUpiDetected(upi: String?) {
+        _clipboardDetectedUpi.value = upi
+    }
+
+    fun dismissClipboardBanner() {
+        _clipboardDetectedUpi.value = null
     }
 
     // Active Navigation

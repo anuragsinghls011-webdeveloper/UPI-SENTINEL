@@ -1,0 +1,13 @@
+{
+  "name": "upi-sentinel-backend",
+  "version": "1.0.0",
+  "description": "UPI Sentinel Node.js Orchestrator & Audit Service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5"
+  }
+}
