@@ -1,4 +1,10 @@
 package com.example.ui.viewmodel
+import com.example.data.model.AdversarialImmuneSession
+import com.example.data.model.RegressionTestVector
+import com.example.engine.IntentBridgeEngine
+import com.example.data.model.BusinessIntent
+import com.example.data.model.PaymentRequestIntent
+import com.example.data.model.OutcomeStatus
 import com.example.data.api.SentinelApiService
 import com.example.data.repository.CybercrimeThreatRepository
 import com.example.engine.DualModeRiskEngine
@@ -27,6 +33,7 @@ import kotlinx.coroutines.launch
 
 enum class AppTab(val title: String) {
     DASHBOARD("Dashboard"),
+    INTENT_BRIDGE("IntentBridge"),
     QR_SCAN("Scan QR"),
     ANALYZE("Analyze"),
     CHAT("Gemini AI"),
@@ -52,6 +59,38 @@ class SentinelViewModel(application: Application) : AndroidViewModel(application
     private val apiService = SentinelApiService.create()
     val cybercrimeThreatRepository = CybercrimeThreatRepository(apiService)
     val dualModeRiskEngine = DualModeRiskEngine(apiService, cybercrimeThreatRepository)
+    val intentBridgeEngine = IntentBridgeEngine(cybercrimeThreatRepository)
+
+    // Permanent Regression Test Vectors (Never Forget That Attack)
+    private val _regressionVectors = MutableStateFlow<List<RegressionTestVector>>(
+        listOf(
+            RegressionTestVector(
+                regressionId = "REG-VEC-10901",
+                incidentOrigin = "Swiggy Dynamic QR Overbilling",
+                attackVectorName = "Amount Inflation + Lookalike VPA",
+                variantCount = 4,
+                patchRef = "RULE_IMMUNE_AMOUNT_SPLIT_GUARD",
+                isRegressionPassing = true,
+                timestamp = System.currentTimeMillis() - 86400000L
+            ),
+            RegressionTestVector(
+                regressionId = "REG-VEC-10902",
+                incidentOrigin = "OLX Disguised Collect Request",
+                attackVectorName = "Reverse Debit Direction Manipulation",
+                variantCount = 5,
+                patchRef = "RULE_IMMUNE_COLLECT_REVERSE_GUARD",
+                isRegressionPassing = true,
+                timestamp = System.currentTimeMillis() - 43200000L
+            )
+        )
+    )
+    val regressionVectors: StateFlow<List<RegressionTestVector>> = _regressionVectors.asStateFlow()
+
+    private val _currentImmuneSession = MutableStateFlow<AdversarialImmuneSession?>(null)
+    val currentImmuneSession: StateFlow<AdversarialImmuneSession?> = _currentImmuneSession.asStateFlow()
+
+    private val _isSimulatingAttack = MutableStateFlow(false)
+    val isSimulatingAttack: StateFlow<Boolean> = _isSimulatingAttack.asStateFlow()
 
     // Clipboard and Intent Interception states
     private val _clipboardDetectedUpi = MutableStateFlow<String?>(null)
@@ -438,4 +477,38 @@ class SentinelViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun getScenarios() = repository.getDemoScenarios()
+
+    fun runAdversarialDefensePipeline(
+        incidentName: String,
+        business: BusinessIntent,
+        payment: PaymentRequestIntent
+    ) {
+        viewModelScope.launch {
+            _isSimulatingAttack.value = true
+            delay(400L) // Visual progression
+            val session = intentBridgeEngine.runAdversarialSimulation(incidentName, business, payment)
+            _currentImmuneSession.value = session
+            if (session.regressionVectorSaved != null) {
+                _regressionVectors.value = listOf(session.regressionVectorSaved) + _regressionVectors.value
+                repository.logEvent(
+                    eventType = "REGRESSION_VECTOR_LOCKED",
+                    actor = _currentRole.value.displayName,
+                    entityId = session.regressionVectorSaved.regressionId,
+                    metadata = "Immune Patch generated: ${session.generatedPatch?.candidateRuleName} | Added to regression suite."
+                )
+            }
+            _isSimulatingAttack.value = false
+        }
+    }
+
+    fun recordOutcome(evaluationId: String, outcome: OutcomeStatus, notes: String = "") {
+        viewModelScope.launch {
+            repository.logEvent(
+                eventType = "INTENT_OUTCOME_RECORDED",
+                actor = _currentRole.value.displayName,
+                entityId = evaluationId,
+                metadata = "Outcome: ${outcome.displayName} | Notes: $notes"
+            )
+        }
+    }
 }

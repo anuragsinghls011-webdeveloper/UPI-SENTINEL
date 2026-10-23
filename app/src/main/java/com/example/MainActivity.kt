@@ -1,4 +1,6 @@
 package com.example
+import com.example.ui.screens.IntentBridgeScreen
+import androidx.compose.material.icons.filled.CompareArrows
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -332,6 +334,7 @@ fun SentinelMainApp(viewModel: SentinelViewModel) {
                 ) {
                     val items = listOf(
                         NavDestination(AppTab.DASHBOARD, Icons.Default.Home, "Overview"),
+                        NavDestination(AppTab.INTENT_BRIDGE, Icons.Default.CompareArrows, "IntentBridge"),
                         NavDestination(AppTab.QR_SCAN, Icons.Default.QrCodeScanner, "Scan QR"),
                         NavDestination(AppTab.ANALYZE, Icons.Default.FlashOn, "Analyze"),
                         NavDestination(AppTab.CHAT, Icons.Default.AutoAwesome, "Gemini AI"),
@@ -430,6 +433,9 @@ fun SentinelMainApp(viewModel: SentinelViewModel) {
                                 onNavigateToDetail = { result ->
                                     viewModel.selectDetail(result)
                                 }
+                            )
+                            AppTab.INTENT_BRIDGE -> IntentBridgeScreen(
+                                viewModel = viewModel
                             )
 
                             AppTab.QR_SCAN -> QrScannerScreen(
